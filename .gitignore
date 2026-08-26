@@ -11,4 +11,3 @@ web-build/
 *.orig.*
 .turbo/
 coverage/
-drizzle/meta/

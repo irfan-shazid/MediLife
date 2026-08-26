@@ -1,8 +1,6 @@
 import { Router } from "express";
-import { and, count, eq, gte, sql } from "drizzle-orm";
 import type { AdminStats } from "@meditime/shared";
-import { db } from "../db/index.js";
-import { medicineLogs, medicines, user } from "../db/schema.js";
+import { prisma } from "../db/prisma.js";
 import { requireAdmin, requireAuth } from "../middleware/requireAuth.js";
 
 export const adminStatsRouter = Router();
@@ -12,32 +10,28 @@ adminStatsRouter.use(requireAuth, requireAdmin);
 adminStatsRouter.get("/", async (_req, res) => {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [[totalUsers], [newUsers], [totalMeds], [activeMeds], [logStats], [recentUsers]] =
+  const [totalUsers, newUsersLast7Days, totalMedicines, activeMedicines, totalDosesLogged, takenDoses, recentUsers] =
     await Promise.all([
-      db.select({ n: count() }).from(user),
-      db.select({ n: count() }).from(user).where(gte(user.createdAt, sevenDaysAgo)),
-      db.select({ n: count() }).from(medicines),
-      db.select({ n: count() }).from(medicines).where(eq(medicines.isActive, true)),
-      db
-        .select({
-          total: count(),
-          taken: sql<number>`count(*) filter (where ${medicineLogs.status} = 'taken')`,
-        })
-        .from(medicineLogs),
-      db
-        .select({ id: user.id, name: user.name, email: user.email, createdAt: user.createdAt })
-        .from(user)
-        .orderBy(sql`${user.createdAt} desc`)
-        .limit(10),
+      prisma.user.count(),
+      prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+      prisma.medicine.count(),
+      prisma.medicine.count({ where: { isActive: true } }),
+      prisma.medicineLog.count(),
+      prisma.medicineLog.count({ where: { status: "taken" } }),
+      prisma.user.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: { id: true, name: true, email: true, createdAt: true },
+      }),
     ]);
 
   const stats: AdminStats = {
-    totalUsers: totalUsers.n,
-    newUsersLast7Days: newUsers.n,
-    totalMedicines: totalMeds.n,
-    activeMedicines: activeMeds.n,
-    adherenceRate: logStats.total > 0 ? Number(logStats.taken) / logStats.total : 0,
-    totalDosesLogged: logStats.total,
+    totalUsers,
+    newUsersLast7Days,
+    totalMedicines,
+    activeMedicines,
+    adherenceRate: totalDosesLogged > 0 ? takenDoses / totalDosesLogged : 0,
+    totalDosesLogged,
   };
 
   res.json({ stats, recentUsers });

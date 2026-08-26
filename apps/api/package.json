@@ -8,19 +8,19 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
-    "auth:generate": "npx @better-auth/cli generate --config src/auth.ts --output src/db/auth-schema.ts"
+    "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "auth:generate": "npx @better-auth/cli generate --config src/auth.ts --output prisma/schema.prisma"
   },
   "dependencies": {
     "@better-auth/expo": "^1.7.1",
     "@meditime/shared": "*",
-    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/client": "^6.19.3",
     "better-auth": "^1.7.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.45.2",
     "express": "^4.22.2",
     "express-rate-limit": "^8.6.2",
     "zod": "^3.23.8"
@@ -29,7 +29,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.25",
     "@types/node": "^22.9.0",
-    "drizzle-kit": "^0.31.10",
+    "prisma": "^6.19.3",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }

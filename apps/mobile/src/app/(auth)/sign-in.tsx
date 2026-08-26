@@ -7,6 +7,8 @@ import { ThemedText } from '@/components/themed-text';
 import { TextField } from '@/components/ui/text-field';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { OrDivider } from '@/components/ui/or-divider';
+import { GoogleSignInButton } from '@/components/google-sign-in-button';
 import { authClient } from '@/lib/auth-client';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
@@ -63,6 +65,10 @@ export default function SignIn() {
           </ThemedText>
         ) : null}
         <Button label="Sign in" onPress={onSubmit} loading={loading} disabled={!email || !password} />
+
+        <OrDivider />
+
+        <GoogleSignInButton onError={setError} />
       </Animated.View>
 
       <View style={styles.footer}>

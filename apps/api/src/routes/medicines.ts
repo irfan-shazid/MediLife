@@ -1,34 +1,48 @@
 import { Router } from "express";
-import { and, eq } from "drizzle-orm";
+import type { Medicine as PrismaMedicine } from "@prisma/client";
 import { createMedicineSchema, updateMedicineSchema } from "@meditime/shared";
-import { db } from "../db/index.js";
-import { medicines } from "../db/schema.js";
+import { prisma } from "../db/prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 export const medicinesRouter = Router();
 
 medicinesRouter.use(requireAuth);
 
+function dateOnly(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+// Prisma returns `@db.Date` columns as Date objects and `Json` columns as
+// `JsonValue` — reshape to the plain-string/typed-array DTO the mobile app
+// (and @meditime/shared) expects.
+function toDTO(m: PrismaMedicine) {
+  return {
+    ...m,
+    times: m.times as string[],
+    daysOfWeek: m.daysOfWeek as number[],
+    startDate: dateOnly(m.startDate),
+    endDate: m.endDate ? dateOnly(m.endDate) : null,
+  };
+}
+
 medicinesRouter.get("/", async (req, res) => {
-  const rows = await db
-    .select()
-    .from(medicines)
-    .where(eq(medicines.userId, req.user!.id))
-    .orderBy(medicines.createdAt);
-  res.json(rows);
+  const rows = await prisma.medicine.findMany({
+    where: { userId: req.user!.id },
+    orderBy: { createdAt: "asc" },
+  });
+  res.json(rows.map(toDTO));
 });
 
 medicinesRouter.get("/:id", async (req, res) => {
-  const [row] = await db
-    .select()
-    .from(medicines)
-    .where(and(eq(medicines.id, req.params.id), eq(medicines.userId, req.user!.id)));
+  const row = await prisma.medicine.findFirst({
+    where: { id: req.params.id, userId: req.user!.id },
+  });
 
   if (!row) {
     res.status(404).json({ error: "Medicine not found" });
     return;
   }
-  res.json(row);
+  res.json(toDTO(row));
 });
 
 medicinesRouter.post("/", async (req, res) => {
@@ -39,9 +53,8 @@ medicinesRouter.post("/", async (req, res) => {
   }
 
   const input = parsed.data;
-  const [row] = await db
-    .insert(medicines)
-    .values({
+  const row = await prisma.medicine.create({
+    data: {
       userId: req.user!.id,
       name: input.name,
       dosage: input.dosage || null,
@@ -50,13 +63,13 @@ medicinesRouter.post("/", async (req, res) => {
       icon: input.icon,
       times: input.times,
       daysOfWeek: input.daysOfWeek,
-      startDate: input.startDate,
-      endDate: input.endDate ?? null,
+      startDate: new Date(input.startDate),
+      endDate: input.endDate ? new Date(input.endDate) : null,
       isActive: input.isActive,
-    })
-    .returning();
+    },
+  });
 
-  res.status(201).json(row);
+  res.status(201).json(toDTO(row));
 });
 
 medicinesRouter.patch("/:id", async (req, res) => {
@@ -67,39 +80,41 @@ medicinesRouter.patch("/:id", async (req, res) => {
   }
 
   const input = parsed.data;
-  const [existing] = await db
-    .select({ id: medicines.id })
-    .from(medicines)
-    .where(and(eq(medicines.id, req.params.id), eq(medicines.userId, req.user!.id)));
+  const existing = await prisma.medicine.findFirst({
+    where: { id: req.params.id, userId: req.user!.id },
+    select: { id: true },
+  });
 
   if (!existing) {
     res.status(404).json({ error: "Medicine not found" });
     return;
   }
 
-  const [row] = await db
-    .update(medicines)
-    .set({
+  const row = await prisma.medicine.update({
+    where: { id: req.params.id },
+    data: {
       ...input,
       dosage: input.dosage === "" ? null : input.dosage,
       notes: input.notes === "" ? null : input.notes,
-      updatedAt: new Date(),
-    })
-    .where(eq(medicines.id, req.params.id))
-    .returning();
+      startDate: input.startDate ? new Date(input.startDate) : undefined,
+      endDate: input.endDate === undefined ? undefined : input.endDate ? new Date(input.endDate) : null,
+    },
+  });
 
-  res.json(row);
+  res.json(toDTO(row));
 });
 
 medicinesRouter.delete("/:id", async (req, res) => {
-  const result = await db
-    .delete(medicines)
-    .where(and(eq(medicines.id, req.params.id), eq(medicines.userId, req.user!.id)))
-    .returning({ id: medicines.id });
+  const existing = await prisma.medicine.findFirst({
+    where: { id: req.params.id, userId: req.user!.id },
+    select: { id: true },
+  });
 
-  if (result.length === 0) {
+  if (!existing) {
     res.status(404).json({ error: "Medicine not found" });
     return;
   }
+
+  await prisma.medicine.delete({ where: { id: req.params.id } });
   res.status(204).send();
 });
