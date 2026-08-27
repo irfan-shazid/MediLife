@@ -12,7 +12,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
     "auth:generate": "npx @better-auth/cli generate --config src/auth.ts --output prisma/schema.prisma"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@better-auth/expo": "^1.7.1",

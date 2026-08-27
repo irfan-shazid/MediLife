@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ---------------------------------------------------------------------------
@@ -56,6 +57,10 @@ model Account {
   id                    String    @id
   accountId             String    @map("account_id")
   providerId            String    @map("provider_id")
+  // The stable key Better Auth uses to recognize an account, alongside
+  // accountId — "local:credential" for email/password, "local:oauth:google"
+  // for Google. Required on every row; not just an admin-plugin extra.
+  issuer                String
   userId                String    @map("user_id")
   accessToken           String?   @map("access_token")
   refreshToken          String?   @map("refresh_token")
