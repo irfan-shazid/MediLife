@@ -38,11 +38,51 @@ export const createMedicineSchema = z.object({
   startDate: z.string().date(),
   endDate: z.string().date().optional().nullable(),
   isActive: z.boolean().default(true),
+  soundId: z.string().uuid().nullable().optional(),
 });
 export type CreateMedicineInput = z.infer<typeof createMedicineSchema>;
 
 export const updateMedicineSchema = createMedicineSchema.partial();
 export type UpdateMedicineInput = z.infer<typeof updateMedicineSchema>;
+
+// ---------------------------------------------------------------------------
+// Notification sounds
+//
+// Neither iOS nor Android will play a file uploaded/downloaded at runtime as
+// the actual OS notification sound — both require sound files bundled into
+// the app binary at build time. So a chosen sound here plays as an in-app
+// "alarm" (looped, via expo-audio) whenever the app is open at/after a due
+// dose's time; the OS-level local notification always uses the platform
+// default sound, which is what actually fires in the background.
+// ---------------------------------------------------------------------------
+
+export const MAX_SOUND_FILE_BYTES = 10 * 1024 * 1024; // 10MB
+
+export const ALLOWED_SOUND_MIME_TYPES = [
+  "audio/mpeg", // .mp3
+  "audio/mp4", // .m4a
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/ogg",
+] as const;
+
+export const uploadSoundSchema = z.object({
+  name: z.string().trim().min(1, "Give the sound a name").max(80),
+});
+export type UploadSoundInput = z.infer<typeof uploadSoundSchema>;
+
+export interface NotificationSound {
+  id: string;
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  isDefault: boolean;
+  uploadedBy: string | null;
+  createdAt: string;
+}
 
 export interface Medicine {
   id: string;
@@ -57,6 +97,8 @@ export interface Medicine {
   startDate: string;
   endDate: string | null;
   isActive: boolean;
+  soundId: string | null;
+  sound: NotificationSound | null;
   createdAt: string;
   updatedAt: string;
 }

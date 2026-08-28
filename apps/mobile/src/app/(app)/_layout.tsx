@@ -2,11 +2,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import { useSession } from '@/lib/auth-client';
 import { useTheme } from '@/hooks/use-theme';
+import { useDoseAlarm } from '@/hooks/use-dose-alarm';
 
 export default function AppTabsLayout() {
   const theme = useTheme();
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role;
+
+  useDoseAlarm();
 
   return (
     <Tabs

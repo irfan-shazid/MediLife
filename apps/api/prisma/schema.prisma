@@ -27,10 +27,11 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  sessions     Session[]
-  accounts     Account[]
-  medicines    Medicine[]
-  medicineLogs MedicineLog[]
+  sessions           Session[]
+  accounts           Account[]
+  medicines          Medicine[]
+  medicineLogs       MedicineLog[]
+  notificationSounds NotificationSound[]
 
   @@map("user")
 }
@@ -107,13 +108,35 @@ model Medicine {
   startDate  DateTime  @map("start_date") @db.Date
   endDate    DateTime? @map("end_date") @db.Date
   isActive   Boolean   @default(true) @map("is_active")
+  soundId    String?   @map("sound_id")
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
-  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  logs MedicineLog[]
+  user  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sound NotificationSound? @relation(fields: [soundId], references: [id], onDelete: SetNull)
+  logs  MedicineLog[]
 
   @@map("medicines")
+}
+
+// An admin-uploaded "default" sound (isDefault: true, visible to everyone) or
+// a user's own upload (isDefault: false, visible only to its uploader). See
+// the comment on NotificationSound in packages/shared for why this can only
+// ever play as an in-app alarm, never as the real OS notification sound.
+model NotificationSound {
+  id         String   @id @default(uuid())
+  name       String
+  fileName   String   @map("file_name") // name on disk under apps/api/uploads/sounds/
+  mimeType   String   @map("mime_type")
+  sizeBytes  Int      @map("size_bytes")
+  isDefault  Boolean  @default(false) @map("is_default")
+  uploadedBy String?  @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  uploader  User?      @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+  medicines Medicine[]
+
+  @@map("notification_sounds")
 }
 
 model MedicineLog {

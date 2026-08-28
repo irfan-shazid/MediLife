@@ -11,3 +11,4 @@ web-build/
 *.orig.*
 .turbo/
 coverage/
+apps/api/uploads/

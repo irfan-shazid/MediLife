@@ -60,8 +60,13 @@ export default function AdminDashboard() {
             ))}
           </View>
 
-          <View style={{ marginTop: Spacing.md }}>
+          <View style={{ marginTop: Spacing.md, gap: Spacing.sm }}>
             <Button label="Manage users" variant="secondary" onPress={() => router.push('/(app)/admin/users')} />
+            <Button
+              label="Manage default sounds"
+              variant="secondary"
+              onPress={() => router.push('/(app)/admin/sounds')}
+            />
           </View>
         </>
       )}

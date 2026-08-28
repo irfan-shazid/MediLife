@@ -135,8 +135,19 @@ real account. See `apps/api/prisma/seed.ts`.
 - **Admin**: total/new users, active/total medicines, overall adherence, recently-joined
   list, and a user management screen (search, promote/demote admin, ban/unban) built on
   Better Auth's `admin` plugin.
+- **Notification sounds**: admins upload "default" sounds (visible to everyone); any user
+  can also upload their own (max 10MB, `apps/api/src/lib/uploads.ts`), then pick one per
+  medicine in the sound picker on the add/edit screen. Important caveat: neither iOS nor
+  Android lets an app register a runtime-uploaded file as the actual OS notification
+  sound — both require it bundled into the binary at build time. So the chosen sound
+  plays as a **looping in-app alarm** (`useDoseAlarm`, polling every 20s while the app is
+  open) for as long as a dose is due; the real background/OS-level local notification
+  always uses the platform default sound. Files live on local disk
+  (`apps/api/uploads/sounds/`, gitignored) — fine for local dev, but swap for real object
+  storage (S3/R2/etc.) before deploying anywhere without a persistent disk.
 - Rate limiting on the API: a strict limiter on `/api/auth/*` (20 req/15min per IP, slows
-  down credential stuffing) and a general limiter on the rest of `/api` (120 req/min).
+  down credential stuffing), a general limiter on the rest of `/api` (120 req/min), and a
+  tighter one on `/api/sounds` (30 uploads/hour) given file uploads are heavier.
 - Smoother/faster UI: spring press animations + haptics on every tappable surface,
   skeleton loaders instead of "Loading…" text, `FlatList`/`SectionList` (virtualized,
   not `.map()` in a `ScrollView`) for medicines/history/admin-users, staggered list-item
@@ -153,9 +164,11 @@ real account. See `apps/api/prisma/seed.ts`.
 - `hooks.ts` — typed `useAppDispatch`/`useAppSelector`.
 
 Screens don't call the RTK Query hooks directly; `src/hooks/use-medicines.ts`,
-`use-logs.ts`, and `use-admin-stats.ts` wrap them behind the same shape screens already
-used (`{ data, isLoading, refetch }`, `{ mutate, mutateAsync, isPending }`), so if you add
-a new field or endpoint, extend `store/api.ts` first and the screens mostly don't change.
+`use-logs.ts`, `use-admin-stats.ts`, and `use-sounds.ts` wrap them behind the same shape
+screens already used (`{ data, isLoading, refetch }`, `{ mutate, mutateAsync, isPending }`),
+so if you add a new field or endpoint, extend `store/api.ts` first and the screens mostly
+don't change. `use-dose-alarm.ts` and `use-preview-player.ts` are the two places that talk
+to `expo-audio` directly (looping in-app alarm, and tap-to-preview in the sound pickers).
 
 ## Notes & next steps
 

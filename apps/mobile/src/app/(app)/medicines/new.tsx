@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ColorPicker, IconPicker } from '@/components/color-icon-picker';
 import { DayPicker } from '@/components/day-picker';
 import { TimeListEditor } from '@/components/time-list-editor';
+import { SoundPicker } from '@/components/sound-picker';
 import { useCreateMedicine } from '@/hooks/use-medicines';
 import { Spacing } from '@/constants/theme';
 
@@ -24,6 +25,7 @@ export default function NewMedicine() {
   const [icon, setIcon] = useState<MedicineIcon>('pill');
   const [times, setTimes] = useState<string[]>([]);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([]);
+  const [soundId, setSoundId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const createMedicine = useCreateMedicine();
@@ -42,6 +44,7 @@ export default function NewMedicine() {
         icon,
         times,
         daysOfWeek,
+        soundId,
         startDate: today(),
         isActive: true,
       });
@@ -97,6 +100,13 @@ export default function NewMedicine() {
           placeholder="e.g. take with food"
           multiline
         />
+
+        <View style={{ gap: Spacing.xs }}>
+          <ThemedText variant="label" color="textSecondary">
+            NOTIFICATION SOUND
+          </ThemedText>
+          <SoundPicker value={soundId} onChange={setSoundId} />
+        </View>
 
         {error ? (
           <ThemedText variant="caption" color="danger">

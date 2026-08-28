@@ -10,6 +10,7 @@ import { SkeletonList } from '@/components/ui/skeleton';
 import { ColorPicker, IconPicker } from '@/components/color-icon-picker';
 import { DayPicker } from '@/components/day-picker';
 import { TimeListEditor } from '@/components/time-list-editor';
+import { SoundPicker } from '@/components/sound-picker';
 import { useDeleteMedicine, useMedicine, useUpdateMedicine } from '@/hooks/use-medicines';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
@@ -24,6 +25,7 @@ function EditForm({ medicine }: { medicine: Medicine }) {
   const [times, setTimes] = useState<string[]>(medicine.times);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(medicine.daysOfWeek);
   const [isActive, setIsActive] = useState(medicine.isActive);
+  const [soundId, setSoundId] = useState<string | null>(medicine.soundId);
   const [error, setError] = useState<string | null>(null);
 
   const updateMedicine = useUpdateMedicine(medicine.id);
@@ -44,6 +46,7 @@ function EditForm({ medicine }: { medicine: Medicine }) {
         times,
         daysOfWeek,
         isActive,
+        soundId,
       });
       router.back();
     } catch {
@@ -111,6 +114,13 @@ function EditForm({ medicine }: { medicine: Medicine }) {
         </View>
 
         <TextField label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
+
+        <View style={{ gap: Spacing.xs }}>
+          <ThemedText variant="label" color="textSecondary">
+            NOTIFICATION SOUND
+          </ThemedText>
+          <SoundPicker value={soundId} onChange={setSoundId} />
+        </View>
 
         {error ? (
           <ThemedText variant="caption" color="danger">

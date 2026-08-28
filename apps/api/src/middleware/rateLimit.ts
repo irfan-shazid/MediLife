@@ -18,3 +18,13 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many requests. Please slow down." },
 });
+
+// Tighter limiter specifically for /api/sounds (file uploads), to bound
+// storage/bandwidth abuse regardless of the general API limit above.
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many uploads. Please try again later." },
+});

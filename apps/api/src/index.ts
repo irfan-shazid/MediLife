@@ -6,7 +6,9 @@ import { auth } from "./auth.js";
 import { medicinesRouter } from "./routes/medicines.js";
 import { logsRouter } from "./routes/logs.js";
 import { adminStatsRouter } from "./routes/adminStats.js";
-import { apiLimiter, authLimiter } from "./middleware/rateLimit.js";
+import { soundsRouter } from "./routes/sounds.js";
+import { apiLimiter, authLimiter, uploadLimiter } from "./middleware/rateLimit.js";
+import { SOUNDS_DIR } from "./lib/uploads.js";
 
 const app = express();
 
@@ -36,12 +38,18 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authLimiter);
 app.all("/api/auth/*", toNodeHandler(auth));
 
+// Uploaded sound files are streamed directly by URL (the OS notification/
+// audio player fetching them has no session cookie), so this is public.
+app.use("/uploads/sounds", express.static(SOUNDS_DIR));
+
 app.use(express.json());
 app.use("/api", apiLimiter);
+app.use("/api/sounds", uploadLimiter);
 
 app.use("/api/medicines", medicinesRouter);
 app.use("/api/logs", logsRouter);
 app.use("/api/admin/stats", adminStatsRouter);
+app.use("/api/sounds", soundsRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   // eslint-disable-next-line no-console

@@ -6,6 +6,7 @@ import type {
   CreateMedicineInput,
   Medicine,
   MedicineLog,
+  NotificationSound,
   UpdateMedicineInput,
 } from '@meditime/shared';
 import { authClient } from '@/lib/auth-client';
@@ -43,11 +44,14 @@ const rawBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiErrorShape> = async ({
 }) => {
   try {
     const cookie = await authClient.getCookie();
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
     const res = await fetch(`${apiUrl}${url}`, {
       method,
       credentials: 'omit',
-      headers: { 'Content-Type': 'application/json', Cookie: cookie },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      // Sending FormData needs no Content-Type here — fetch sets the
+      // multipart boundary itself only when the header is left unset.
+      headers: isFormData ? { Cookie: cookie } : { 'Content-Type': 'application/json', Cookie: cookie },
+      body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
     });
 
     if (!res.ok) {
@@ -64,7 +68,7 @@ const rawBaseQuery: BaseQueryFn<ApiRequest, unknown, ApiErrorShape> = async ({
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: rawBaseQuery,
-  tagTypes: ['Medicine', 'Log', 'AdminStats'],
+  tagTypes: ['Medicine', 'Log', 'AdminStats', 'Sound'],
   endpoints: (builder) => ({
     getMedicines: builder.query<Medicine[], void>({
       query: () => ({ url: '/api/medicines' }),
@@ -146,6 +150,56 @@ export const api = createApi({
       query: () => ({ url: '/api/admin/stats' }),
       providesTags: ['AdminStats'],
     }),
+
+    getSounds: builder.query<NotificationSound[], void>({
+      query: () => ({ url: '/api/sounds' }),
+      providesTags: ['Sound'],
+    }),
+
+    uploadSound: builder.mutation<NotificationSound, FormData>({
+      query: (formData) => ({ url: '/api/sounds', method: 'POST', body: formData }),
+      invalidatesTags: ['Sound'],
+      onQueryStarted: async (_arg, { dispatch, queryFulfilled }) => {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(showToast({ message: `${data.name} uploaded` }));
+        } catch (err) {
+          const message =
+            (err as { error?: { data?: { error?: string } } })?.error?.data?.error ??
+            'Could not upload that sound';
+          dispatch(showToast({ message, tone: 'error' }));
+        }
+      },
+    }),
+
+    uploadDefaultSound: builder.mutation<NotificationSound, FormData>({
+      query: (formData) => ({ url: '/api/sounds/default', method: 'POST', body: formData }),
+      invalidatesTags: ['Sound'],
+      onQueryStarted: async (_arg, { dispatch, queryFulfilled }) => {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(showToast({ message: `${data.name} added as a default` }));
+        } catch (err) {
+          const message =
+            (err as { error?: { data?: { error?: string } } })?.error?.data?.error ??
+            'Could not upload that sound';
+          dispatch(showToast({ message, tone: 'error' }));
+        }
+      },
+    }),
+
+    deleteSound: builder.mutation<void, string>({
+      query: (id) => ({ url: `/api/sounds/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Sound', { type: 'Medicine', id: 'LIST' }],
+      onQueryStarted: async (_arg, { dispatch, queryFulfilled }) => {
+        try {
+          await queryFulfilled;
+          dispatch(showToast({ message: 'Sound removed' }));
+        } catch {
+          dispatch(showToast({ message: 'Could not remove that sound', tone: 'error' }));
+        }
+      },
+    }),
   }),
 });
 
@@ -158,4 +212,8 @@ export const {
   useGetLogsQuery,
   useCreateLogMutation,
   useGetAdminStatsQuery,
+  useGetSoundsQuery,
+  useUploadSoundMutation,
+  useUploadDefaultSoundMutation,
+  useDeleteSoundMutation,
 } = api;
