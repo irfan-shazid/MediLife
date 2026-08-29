@@ -2,7 +2,10 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import type { Medicine } from '@meditime/shared';
 
-const CHANNEL_ID = 'medicine-reminders';
+// Bumped from "medicine-reminders": Android locks a channel's sound/audio
+// settings once created, so anyone who already had the old channel needs a
+// new channel id to actually pick up the alarm-volume routing below.
+const CHANNEL_ID = 'medicine-alarms-v2';
 const ID_SEPARATOR = '__';
 
 Notifications.setNotificationHandler({
@@ -17,10 +20,18 @@ Notifications.setNotificationHandler({
 export async function ensureNotificationSetup() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-      name: 'Medicine reminders',
+      name: 'Medicine alarms',
       importance: Notifications.AndroidImportance.MAX,
       sound: 'default',
       vibrationPattern: [0, 250, 250, 250],
+      // The two lines below are what make this ring like an alarm instead of
+      // a normal notification: routed through the phone's dedicated Alarm
+      // volume slider (usually left loud/on, unlike Notification volume,
+      // which people mute) and allowed to break through Do Not Disturb —
+      // both real Android capabilities exposed directly by expo-notifications,
+      // no custom native code or EAS dev-client build required.
+      audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM },
+      bypassDnd: true,
     });
   }
 }
@@ -66,7 +77,14 @@ export async function scheduleMedicineNotifications(medicine: Medicine) {
     title: `Time for ${medicine.name}`,
     body: medicine.dosage ? `Take ${medicine.dosage}` : 'Tap to mark as taken',
     data: { medicineId: medicine.id },
+    sound: true,
     ...(Platform.OS === 'android' ? { channelId: CHANNEL_ID } : {}),
+    // iOS has no separate "alarm volume" for third-party apps (that's an
+    // Apple-only capability), so this is the closest available lever: lets
+    // the reminder break through Focus modes. Needs a real device build with
+    // the Time Sensitive Notifications capability enabled to actually take
+    // effect — silently ignored under Expo Go.
+    ...(Platform.OS === 'ios' ? { interruptionLevel: 'timeSensitive' as const } : {}),
   };
 
   for (const time of medicine.times) {

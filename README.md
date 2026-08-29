@@ -145,6 +145,16 @@ real account. See `apps/api/prisma/seed.ts`.
   always uses the platform default sound. Files live on local disk
   (`apps/api/uploads/sounds/`, gitignored) — fine for local dev, but swap for real object
   storage (S3/R2/etc.) before deploying anywhere without a persistent disk.
+- **Loud, alarm-like background reminders** (`apps/mobile/src/lib/notifications.ts`): on
+  Android, the reminder channel is configured with `audioAttributes.usage = ALARM` and
+  `bypassDnd: true` — real capabilities `expo-notifications` exposes directly, no custom
+  native module or EAS dev-client build needed. That routes the sound through the phone's
+  dedicated **Alarm volume** slider (the one people rarely mute, unlike Notification
+  volume) and lets it ring through Do Not Disturb once the user grants DND-access from
+  Profile → "Ring through Do Not Disturb". iOS has no equivalent third-party alarm-volume
+  API from Apple, so notifications set `interruptionLevel: 'timeSensitive'` as the closest
+  available lever — it only takes effect in a real custom build with the Time Sensitive
+  Notifications capability enabled, not under Expo Go.
 - Rate limiting on the API: a strict limiter on `/api/auth/*` (20 req/15min per IP, slows
   down credential stuffing), a general limiter on the rest of `/api` (120 req/min), and a
   tighter one on `/api/sounds` (30 uploads/hour) given file uploads are heavier.
