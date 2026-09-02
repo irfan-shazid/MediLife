@@ -82,6 +82,10 @@ export default function ManageUsers() {
         keyExtractor={(u) => u.id}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
+        removeClippedSubviews
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={7}
         ListHeaderComponent={
           <View style={{ marginBottom: Spacing.md }}>
             <TextField

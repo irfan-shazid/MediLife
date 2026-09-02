@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { Medicine } from '@meditime/shared';
@@ -21,7 +22,7 @@ function daysSummary(days: number[]) {
   return days.map((d) => DAY_LABELS[d]).join(', ');
 }
 
-export function MedicineCard({
+export const MedicineCard = memo(function MedicineCard({
   medicine,
   onPress,
   index = 0,
@@ -33,7 +34,7 @@ export function MedicineCard({
   const theme = useTheme();
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 40).springify().damping(18)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 30).springify().damping(18)}>
       <PressableScale onPress={onPress} scaleTo={0.98} haptic={false}>
         <Card style={styles.card}>
           <View style={[styles.iconBubble, { backgroundColor: `${medicine.color}22` }]}>
@@ -63,7 +64,7 @@ export function MedicineCard({
       </PressableScale>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },

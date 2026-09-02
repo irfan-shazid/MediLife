@@ -35,6 +35,10 @@ export default function MedicinesList() {
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
+        removeClippedSubviews
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={7}
         ListEmptyComponent={
           <View style={styles.empty}>
             <ThemedText variant="bodyLarge" style={{ textAlign: 'center' }}>

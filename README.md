@@ -184,6 +184,18 @@ to `expo-audio` directly (looping in-app alarm, and tap-to-preview in the sound 
 
 ## Notes & next steps
 
+- **Performance**: `useDoseAlarm` (mounted app-wide for the sound-alarm feature) used to poll
+  medicines + logs every 20s regardless of screen or whether it was even possible for an
+  alarm to fire — that's real, continuous background work behind every screen in the app.
+  It now stays fully idle unless at least one active medicine actually has a sound
+  assigned, and only then polls (at 30s) the same shared query other screens already use.
+  `DoseRow`/`MedicineCard`/`StatTile` are memoized and their list entrance-animation delay
+  is capped, and the three `FlatList`/`SectionList` screens (Medicines, History, Admin
+  Users) got standard virtualization tuning (`removeClippedSubviews`,
+  `maxToRenderPerBatch`, `windowSize`). One thing no code change fixes: a lot of perceived
+  slowness testing through Expo Go is **dev-mode overhead** (unminified JS, dev-mode React,
+  live-reload bookkeeping) — a real EAS production build will feel meaningfully snappier
+  than anything in Expo Go, dev client or not.
 - The app targets **Expo SDK 54** specifically (not the latest SDK) because Expo Go's
   Play Store build on many devices hasn't caught up past SDK 54 yet — check your installed
   Expo Go version (long-press its icon → App info) before bumping the SDK, or you'll get

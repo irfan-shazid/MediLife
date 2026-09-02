@@ -135,6 +135,10 @@ export default function History() {
         ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
         SectionSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
         stickySectionHeadersEnabled={false}
+        removeClippedSubviews
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
       />
     </View>
   );

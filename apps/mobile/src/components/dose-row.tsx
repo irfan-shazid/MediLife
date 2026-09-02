@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -17,7 +18,7 @@ function formatTime(time: string) {
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
-export function DoseRow({
+export const DoseRow = memo(function DoseRow({
   dose,
   onTake,
   onSkip,
@@ -40,7 +41,7 @@ export function DoseRow({
   }
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 40).springify().damping(18)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 30).springify().damping(18)}>
       <Card style={[styles.card, isResolved && { opacity: 0.55 }]}>
         <View style={[styles.iconBubble, { backgroundColor: `${medicine.color}22` }]}>
           <MedicineIconGlyph icon={medicine.icon} color={medicine.color} size={20} />
@@ -90,7 +91,7 @@ export function DoseRow({
       </Card>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },

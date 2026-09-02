@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 
-export function StatTile({
+export const StatTile = memo(function StatTile({
   label,
   value,
   accent,
@@ -23,7 +24,7 @@ export function StatTile({
       </ThemedText>
     </Card>
   );
-}
+});
 
 const styles = StyleSheet.create({
   tile: { flex: 1, minWidth: 140 },

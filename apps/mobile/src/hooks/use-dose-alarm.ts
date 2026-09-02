@@ -9,7 +9,7 @@ function startOfToday() {
   return d.toISOString();
 }
 
-const CHECK_INTERVAL_MS = 20_000;
+const CHECK_INTERVAL_MS = 30_000;
 
 /**
  * Plays a medicine's chosen sound, looped, as an in-app "alarm" for as long
@@ -19,17 +19,34 @@ const CHECK_INTERVAL_MS = 20_000;
  * local notification itself can never use it.
  *
  * Mounted once near the root of the authenticated app so it's active
- * regardless of which tab is showing, polling medicines/logs periodically
- * to notice newly-due doses.
+ * regardless of which tab is showing. Polling medicines/logs app-wide is
+ * real background cost, so it only actually happens when at least one
+ * active medicine has a sound assigned — otherwise there's nothing this
+ * hook could ever do, and it stays fully idle (piggybacking on whatever's
+ * already cached from Today/Medicines instead of its own request).
  */
 export function useDoseAlarm() {
   const since = useMemo(startOfToday, []);
-  const { data: medicines } = useGetMedicinesQuery(undefined, { pollingInterval: CHECK_INTERVAL_MS });
-  const { data: logs } = useGetLogsQuery(since, { pollingInterval: CHECK_INTERVAL_MS });
+  const { data: medicines } = useGetMedicinesQuery();
+  const hasAlarmableSound = useMemo(
+    () => (medicines ?? []).some((m) => m.isActive && m.soundId),
+    [medicines],
+  );
+
+  const { data: polledMedicines } = useGetMedicinesQuery(undefined, {
+    skip: !hasAlarmableSound,
+    pollingInterval: CHECK_INTERVAL_MS,
+  });
+  const { data: logs } = useGetLogsQuery(since, {
+    skip: !hasAlarmableSound,
+    pollingInterval: CHECK_INTERVAL_MS,
+  });
   const playersRef = useRef(new Map<string, AudioPlayer>());
 
   useEffect(() => {
-    const doses = todaysDoses(medicines ?? [], logs ?? []);
+    if (!hasAlarmableSound) return;
+
+    const doses = todaysDoses(polledMedicines ?? [], logs ?? []);
     const activeKeys = new Set<string>();
 
     for (const dose of doses) {
@@ -52,7 +69,7 @@ export function useDoseAlarm() {
         playersRef.current.delete(key);
       }
     }
-  }, [medicines, logs]);
+  }, [hasAlarmableSound, polledMedicines, logs]);
 
   // Stop everything if the app/screen tree unmounts (e.g. sign-out).
   useEffect(() => {
