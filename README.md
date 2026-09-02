@@ -43,8 +43,10 @@ cp apps/api/.env.example apps/api/.env
 ```
 
 Fill in:
-- `DATABASE_URL` — from your Neon project dashboard (Connection Details → the pooled
-  `postgresql://...` string).
+- `DATABASE_URL` — from your Neon project dashboard (Connection Details → the **direct**
+  `postgresql://...` string, hostname without `-pooler`). Just this one — no separate
+  pooled/direct pair needed, since this app is a single long-running server, not
+  serverless functions.
 - `BETTER_AUTH_SECRET` — generate one with `npx @better-auth/cli secret`.
 - `BETTER_AUTH_URL` — `http://localhost:3000` for local dev.
 - `CORS_ORIGIN` — leave the default; it already whitelists the Expo dev origin and the
